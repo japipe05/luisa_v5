@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Una carta para ti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fdeff1;
+    --bg-2: #f9d9de;
+    --red-front: #dc4d43;
+    --red-back: #b53a34;
+    --red-flap: #d2453c;
+    --red-ink: #a8372c;
+    --paper: #fffdfb;
+    --shadow: rgba(120, 40, 40, .35);
+    --w: min(430px, 86vw);
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "Quicksand", system-ui, sans-serif;
+    background: radial-gradient(circle at 50% 35%, var(--bg) 0%, var(--bg-2) 100%);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    color: var(--red-ink);
+  }
+
+  .scene {
+    perspective: 1100px;
+    padding: calc(var(--w) * .55) 0 calc(var(--w) * .25);
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+
+  /* Capa que se inclina con el mouse / dedo */
+  .tilt {
+    transform-style: flat;
+    transition: transform .25s ease-out;
+    will-change: transform;
+  }
+
+  /* Flotación suave */
+  .float { animation: float 5s ease-in-out infinite; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+
+  /* ---------- SOBRE ---------- */
+  .envelope {
+    --h: calc(var(--w) * .66);
+    position: relative;
+    display: block;
+    width: var(--w);
+    height: var(--h);
+    font-size: calc(var(--w) / 24);
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: #fff;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .envelope:focus-visible { outline: 3px solid #fff; outline-offset: 8px; border-radius: 6px; }
+
+  .back {
+    position: absolute; inset: 0;
+    background: var(--red-back);
+    border-radius: 4px;
+    z-index: 1;
+    box-shadow: 0 .3em 0 rgba(0,0,0,.06);
+  }
+
+  /* Carta */
+  .letter {
+    position: absolute;
+    left: 4%; width: 92%;
+    top: 6%; height: 88%;
+    background: var(--paper);
+    border-radius: 3px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1em 1em .8em;
+    color: var(--red-ink);
+    text-align: center;
+    transition: transform .9s cubic-bezier(.3,.9,.3,1);
+    box-shadow: 0 .2em 1em rgba(120,40,40,.15);
+  }
+  .letter > * { opacity: 0; transition: opacity .8s ease; }
+  .out .letter { transform: translateY(-72%); }
+  .out .letter > * { opacity: 1; }
+  .out .letter > :nth-child(1) { transition-delay: .35s; }
+  .out .letter > :nth-child(2) { transition-delay: .6s; }
+  .out .letter > :nth-child(3) { transition-delay: .9s; }
+  .out .letter > :nth-child(4) { transition-delay: 1.2s; }
+
+  .heart-print { width: 2.1em; height: 2.1em; }
+
+  .letter h2 {
+    font-family: "Dancing Script", cursive;
+    font-size: 2.5em;
+    line-height: 1;
+    color: var(--red-front);
+  }
+  .letter p {
+    font-weight: 700;
+    font-size: 1.02em;
+    line-height: 1.35;
+    max-width: 17em;
+  }
+  .flowers { width: 6.2em; height: auto; }
+
+  /* Frente del sobre (bolsillo) */
+  .front {
+    position: absolute; inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .front .side, .front .bottom { position: absolute; inset: 0; }
+  .front .side {
+    background: linear-gradient(90deg, #d4463d, var(--red-front) 50%, #d4463d);
+    clip-path: polygon(0 0, 50% 54%, 100% 0, 100% 100%, 0 100%);
+    border-radius: 4px;
+  }
+  .front .bottom {
+    background: linear-gradient(180deg, #e2574d, var(--red-front));
+    clip-path: polygon(0 100%, 50% 46%, 100% 100%);
+    border-radius: 4px;
+  }
+
+  .address {
+    position: absolute;
+    left: 0; right: 0;
+    top: 62%;
+    z-index: 6;
+    text-align: center;
+    line-height: 1.55;
+    pointer-events: none;
+  }
+  .address span { font-weight: 500; opacity: .92; }
+  .address b { font-weight: 700; }
+
+  /* Solapa */
+  .flap {
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%; height: 56%;
+    background: linear-gradient(180deg, #c93f37, var(--red-flap));
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top center;
+    transform: perspective(900px) rotateX(0deg);
+    z-index: 5;
+    transition: transform .8s cubic-bezier(.5,0,.2,1), z-index 0s .38s;
+    border-radius: 4px 4px 0 0;
+  }
+  .open .flap {
+    transform: perspective(900px) rotateX(180deg);
+    background: linear-gradient(0deg, #a53530, #b93b34);
+    z-index: 2;
+  }
+
+  /* Sello */
+  .stamp {
+    position: absolute;
+    top: 4.5%; right: 3.5%;
+    width: 3.6em; height: 4.2em;
+    z-index: 7;
+    transition: opacity .3s ease;
+    pointer-events: none;
+    filter: drop-shadow(0 .1em .2em rgba(0,0,0,.15));
+  }
+  .open .stamp { opacity: 0; }
+
+  /* Sombra */
+  .shadow {
+    width: 80%;
+    height: 2.4em;
+    margin: 2.2em auto 0;
+    background: radial-gradient(ellipse at center, var(--shadow) 0%, transparent 70%);
+    filter: blur(6px);
+    animation: shadow 5s ease-in-out infinite;
+  }
+  @keyframes shadow {
+    0%, 100% { transform: scale(1); opacity: .9; }
+    50%      { transform: scale(.88); opacity: .6; }
+  }
+
+  .hint {
+    margin-top: 1.4rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--red-ink);
+    transition: opacity .4s ease;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .opened .hint { opacity: 0; animation: none; }
+  @keyframes pulse { 50% { transform: scale(1.06); } }
+
+  /* Corazones flotantes */
+  .heart-fx {
+    position: fixed;
+    pointer-events: none;
+    color: var(--red-front);
+    z-index: 20;
+    user-select: none;
+  }
+
+  /* Botón de sonido */
+  .sound {
+    position: fixed; top: 14px; right: 14px;
+    width: 46px; height: 46px;
+    border: 0; border-radius: 50%;
+    background: var(--red-front); color: #fff;
+    font-size: 20px; line-height: 1;
+    cursor: pointer; z-index: 30;
+    box-shadow: 0 4px 14px rgba(120,40,40,.3);
+    opacity: 0; pointer-events: none;
+    transform: scale(.8);
+    transition: opacity .4s ease, transform .4s ease;
+  }
+  .opened .sound { opacity: 1; pointer-events: auto; transform: scale(1); }
+  .sound:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .float, .shadow, .hint { animation: none; }
+    .letter, .flap, .tilt { transition-duration: .01s; transition-delay: 0s; }
+    .letter > * { transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Símbolos reutilizables -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="gerbera" viewBox="-50 -50 100 100">
+      <g fill="var(--p, #f06a5f)"><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(0.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(22.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(45.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(67.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(90.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(112.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(135.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(157.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(180.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(202.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(225.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(247.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(270.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(292.5)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(315.0)"/><ellipse cx="0" cy="-30" rx="5.2" ry="19" transform="rotate(337.5)"/></g>
+      <g fill="var(--p2, #f9a08f)"><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(11.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(33.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(56.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(78.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(101.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(123.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(146.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(168.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(191.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(213.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(236.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(258.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(281.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(303.75)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(326.25)"/><ellipse cx="0" cy="-24" rx="4.6" ry="13" transform="rotate(348.75)"/></g>
+      <circle r="13" fill="var(--c, #3b2a24)"/>
+      <circle r="9" fill="none" stroke="#e9c46a" stroke-width="2.4" stroke-dasharray="1.6 2.2"/>
+      <circle r="4" fill="#1f1511"/>
+    </symbol>
+    <symbol id="heart" viewBox="0 0 24 24">
+      <path d="M12 21s-8.5-5.4-8.5-12A4.8 4.8 0 0 1 12 6.2 4.8 4.8 0 0 1 20.5 9c0 6.6-8.5 12-8.5 12z" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="scene">
+  <div class="tilt" id="tilt">
+    <div class="float">
+      <button class="envelope" id="envelope" aria-expanded="false" aria-label="Abrir la carta">
+        <div class="back"></div>
+
+        <!-- Carta -->
+        <div class="letter">
+          <!-- corazón tipo huella -->
+          <svg class="heart-print" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s-8.5-5.4-8.5-12A4.8 4.8 0 0 1 12 6.2 4.8 4.8 0 0 1 20.5 9c0 6.6-8.5 12-8.5 12z" fill="#e0636a"/>
+            <g fill="none" stroke="#fff" stroke-width=".5" opacity=".7">
+              <path d="M12 18.4s-6-4-6-8.8c0-2.6 3-4 6-1.6 3-2.4 6-1 6 1.6 0 4.8-6 8.8-6 8.8z"/>
+              <path d="M12 15.8s-3.6-2.5-3.6-5.4c0-1.6 1.8-2.4 3.6-1 1.8-1.4 3.6-.6 3.6 1 0 2.9-3.6 5.4-3.6 5.4z"/>
+            </g>
+          </svg>
+
+          <h2>¡Feliz 8 meses!</h2>
+
+          <p>Cuanto más tiempo estoy contigo, más te amo</p>
+
+          <!-- Gerberas -->
+          <svg class="flowers" viewBox="0 0 120 80" aria-hidden="true">
+            <g stroke="#1f3a3d" stroke-width="2" fill="none" stroke-linecap="round">
+              <path d="M60 80 C60 62 58 52 60 40"/>
+              <path d="M44 80 C46 68 40 58 36 50"/>
+              <path d="M78 80 C76 68 82 58 88 48"/>
+            </g>
+            <g fill="#1f3a3d">
+              <path d="M52 70c-8-2-12-8-12-14 8 1 12 6 12 14z"/>
+              <path d="M70 68c8-2 13-8 13-14-8 1-13 6-13 14z"/>
+            </g>
+            <use href="#gerbera" x="36" y="2" width="48" height="48" style="--p:#f0566a;--p2:#f98fa0"/>
+            <use href="#gerbera" x="10" y="26" width="32" height="32" style="--p:#f58a2f;--p2:#fbb870"/>
+            <use href="#gerbera" x="76" y="22" width="34" height="34" style="--p:#e8408f;--p2:#f58ec0"/>
+          </svg>
+        </div>
+
+        <!-- Frente -->
+        <div class="front"><div class="side"></div><div class="bottom"></div></div>
+
+        <div class="address">
+          <div><span>Para:</span> <b>My Amore Mio</b></div>
+          <div><span>De:</span> <b>Andres Felipe Rodriguez Roa</b></div>
+        </div>
+
+        <!-- Solapa -->
+        <div class="flap"></div>
+
+        <!-- Sello -->
+        <svg class="stamp" viewBox="0 0 36 42" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="33" height="39" rx="1" fill="#fff" stroke="#fff" stroke-width="3" stroke-dasharray="2.6 2"/>
+          <rect x="6.5" y="6.5" width="23" height="29" fill="none" stroke="#dc4d43" stroke-width="1.6"/>
+          <use href="#heart" x="8" y="12" width="20" height="20" style="color:#dc4d43"/>
+        </svg>
+      </button>
+      <div class="shadow"></div>
+    </div>
+  </div>
+  <p class="hint" id="hint">Toca el sobre para abrirlo</p>
+</main>
+
+<button class="sound" id="sound" aria-label="Silenciar música" title="Música">🔊</button>
+
+<script>
+(() => {
+  const env   = document.getElementById('envelope');
+  const tilt  = document.getElementById('tilt');
+  const body  = document.body;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let isOpen = false, timer;
+
+  /* ===== MÚSICA =====
+     Pon tu canción junto a este archivo y cambia el nombre aquí.
+     Si no la encuentra, suena una cajita de música incluida. */
+  const SONG_SRC = 'luisaaudio.mpeg';
+  const VOLUME = 0.7;
+
+  const audio = new Audio(SONG_SRC);
+  audio.loop = true;
+  audio.preload = 'auto';
+  audio.volume = 0;
+  let useFallback = false, muted = false, fadeId;
+  const soundBtn = document.getElementById('sound');
+
+  function fade(to, ms = 1500, done) {
+    clearInterval(fadeId);
+    const from = audio.volume, t0 = performance.now();
+    fadeId = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      audio.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+      if (k === 1) { clearInterval(fadeId); done && done(); }
+    }, 50);
+  }
+
+  /* Cajita de música de respaldo (Web Audio) */
+  let ctx, master, boxTimer, step = 0;
+  const CHORDS = [[261.63,329.63,392],[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66]];
+  function ping(freq, when) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(.35, when + .01);
+    g.gain.exponentialRampToValueAtTime(.001, when + 1.4);
+    o.connect(g); g.connect(master);
+    o.start(when); o.stop(when + 1.5);
+  }
+  function startBox() {
+    if (boxTimer) return;
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    if (!master) { master = ctx.createGain(); master.connect(ctx.destination); }
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(VOLUME, ctx.currentTime + 1.5);
+    const tick = () => {
+      const chord = CHORDS[Math.floor(step / 8) % CHORDS.length];
+      const pattern = [0,1,2,1,2,1,2,1];
+      const f = chord[pattern[step % 8]] * (step % 8 === 0 ? .5 : 1) * 2;
+      ping(f, ctx.currentTime + .02);
+      step++;
+    };
+    tick();
+    boxTimer = setInterval(tick, 480);
+  }
+  function stopBox() {
+    if (!boxTimer || !ctx) return;
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+    clearInterval(boxTimer); boxTimer = null;
+  }
+
+  function startMusic() {
+    if (muted) return;
+    if (useFallback) return startBox();
+    audio.play().then(() => fade(VOLUME)).catch(() => { useFallback = true; startBox(); });
+  }
+  function stopMusic() {
+    stopBox();
+    if (!audio.paused) fade(0, 1000, () => audio.pause());
+  }
+
+  soundBtn.addEventListener('click', () => {
+    muted = !muted;
+    soundBtn.textContent = muted ? '🔇' : '🔊';
+    soundBtn.setAttribute('aria-label', muted ? 'Activar música' : 'Silenciar música');
+    muted ? stopMusic() : startMusic();
+  });
+
+  /* ----- Abrir / cerrar ----- */
+  function toggle() {
+    clearTimeout(timer);
+    isOpen = !isOpen;
+    env.setAttribute('aria-expanded', isOpen);
+    env.setAttribute('aria-label', isOpen ? 'Cerrar la carta' : 'Abrir la carta');
+
+    if (isOpen) {
+      env.classList.add('open');
+      startMusic();
+      body.classList.add('opened');
+      timer = setTimeout(() => {
+        env.classList.add('out');
+        hearts(26);
+      }, reduce ? 0 : 650);
+    } else {
+      env.classList.remove('out');
+      stopMusic();
+      timer = setTimeout(() => env.classList.remove('open'), reduce ? 0 : 750);
+    }
+  }
+  env.addEventListener('click', toggle);
+
+  /* ----- Inclinación 3D con mouse / dedo ----- */
+  function setTilt(x, y) {
+    const rx = (0.5 - y) * 16;   // eje X (arriba/abajo)
+    const ry = (x - 0.5) * 22;   // eje Y (izq/der)
+    tilt.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  }
+  if (!reduce) {
+    addEventListener('pointermove', e => setTilt(e.clientX / innerWidth, e.clientY / innerHeight));
+    addEventListener('pointerleave', () => tilt.style.transform = '');
+  }
+
+  /* ----- Corazones que suben ----- */
+  function hearts(n) {
+    if (reduce) return;
+    const r = env.getBoundingClientRect();
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('span');
+      el.className = 'heart-fx';
+      el.textContent = '♥';
+      const size = 12 + Math.random() * 22;
+      el.style.fontSize = size + 'px';
+      el.style.left = (r.left + r.width * (0.1 + Math.random() * 0.8)) + 'px';
+      el.style.top  = (r.top + r.height * 0.3) + 'px';
+      el.style.opacity = 0;
+      document.body.appendChild(el);
+
+      const dx = (Math.random() - 0.5) * 160;
+      const dy = -(180 + Math.random() * 260);
+      const delay = Math.random() * 600;
+      const anim = el.animate([
+        { transform: 'translate(0,0) rotate(0deg) scale(.4)', opacity: 0 },
+        { opacity: .9, offset: .15 },
+        { transform: `translate(${dx}px, ${dy}px) rotate(${(Math.random() - .5) * 60}deg) scale(1)`, opacity: 0 }
+      ], { duration: 2200 + Math.random() * 1400, delay, easing: 'ease-out', fill: 'forwards' });
+      anim.onfinish = () => el.remove();
+    }
+  }
+})();
+</script>
+</body>
+</html>
